@@ -13,6 +13,7 @@
 #include <evaluation/TolerantEditDistanceErrorsWriter.h>
 #include <util/ProgramOptions.h>
 #include <util/Logger.h>
+#include <boost/filesystem.hpp>
 #ifdef HAVE_HDF5
 #include <vigra/hdf5impex.hxx>
 #endif
@@ -48,8 +49,8 @@ util::ProgramOption optionPlotFileHeader(
 
 util::ProgramOption optionTedErrorFiles(
 		util::_long_name        = "tedErrorFiles",
-		util::_description_text = "Create files splits.dat and merges.dat (with background label als fps.dat and fns.dat) which report wich "
-		                          "label got split/merged into which.");
+		util::_description_text = "Folder where to create files splits.dat and merges.dat (with background label als fps.dat and fns.dat)"
+		                          "which report which label got split/merged into which.");
 
 util::ProgramOption optionReportVoi(
 		util::_module           = "evaluation",
@@ -82,6 +83,24 @@ util::ProgramOption optionGrowSlices(
 		util::_module           = "evaluation",
 		util::_long_name        = "growSlices",
 		util::_description_text = "For the computation of VOI and RAND, grow the reconstruction slices until no background label is present anymore.");
+
+std::string buildCorrectedPath(std::string root, std::string reconstructionPath) {
+	boost::filesystem::path reconstruction = reconstructionPath;
+	std::string folderName = "corrected_" + reconstruction.stem().string();
+	boost::filesystem::path p = root;
+	p /= folderName ;
+	return p.string();
+
+}
+
+std::string buildReportPath(std::string root, std::string reconstructionPath, std::string type) {
+	boost::filesystem::path reconstruction = reconstructionPath;
+	std::string fileName = reconstruction.stem().string()  + "." + type + ".data";
+	boost::filesystem::path p = root;
+	p /= fileName;
+	return p.string();
+}
+
 
 void readImageStackFromOption(ImageStack& stack, std::string option) {
 
@@ -225,14 +244,14 @@ int main(int optionc, char** optionv) {
 			// list of split, merge, fp, and fn errors
 			pipeline::Value<TolerantEditDistanceErrors> errors = report->getOutput("ted errors");
 
-			std::ofstream splitFile("splits.dat");
+			std::ofstream splitFile(buildReportPath(optionTedErrorFiles, optionReconstruction, "splits"));
 			foreach (float gtLabel, errors->getSplitLabels()) {
 				splitFile << gtLabel << "\t";
 				foreach (float recLabel, errors->getSplits(gtLabel))
 					splitFile << recLabel << "\t";
 				splitFile << std::endl;
 			}
-			std::ofstream mergeFile("merges.dat");
+			std::ofstream mergeFile(buildReportPath(optionTedErrorFiles, optionReconstruction, "merges"));
 			foreach (float recLabel, errors->getMergeLabels()) {
 				mergeFile << recLabel << "\t";
 				foreach (float gtLabel, errors->getMerges(recLabel))
@@ -241,11 +260,10 @@ int main(int optionc, char** optionv) {
 			}
 
 			if (errors->hasBackgroundLabel()) {
-
-				std::ofstream fpFile("fps.dat");
+				std::ofstream fpFile(buildReportPath(optionTedErrorFiles, optionReconstruction, "fps"));
 				foreach (float recLabel, errors->getFalsePositives())
 					fpFile << recLabel << std::endl;
-				std::ofstream fnFile("fns.dat");
+				std::ofstream fnFile(buildReportPath(optionTedErrorFiles, optionReconstruction, "fns"));
 				foreach (float gtLabel, errors->getFalseNegatives())
 					fnFile << gtLabel << std::endl;
 			}
