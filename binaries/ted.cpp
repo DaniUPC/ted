@@ -226,7 +226,8 @@ int main(int optionc, char** optionv) {
 		try {
 
 			// save corrected reconstruction
-			pipeline::Process<ImageStackDirectoryWriter> correctedWriter("corrected");
+			pipeline::Process<ImageStackDirectoryWriter> 
+				correctedWriter(buildCorrectedPath(optionTedErrorFiles, optionReconstruction));
 			correctedWriter->setInput(report->getOutput("ted corrected reconstruction"));
 			correctedWriter->write();
 
