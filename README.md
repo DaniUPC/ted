@@ -18,7 +18,7 @@ Get Source:
 -----------
 
   ```
-  git clone https://github.com/funkey/ted
+  git clone https://github.com/DaniUPC/ted
   cd ted
   git submodule update --init
   ```
